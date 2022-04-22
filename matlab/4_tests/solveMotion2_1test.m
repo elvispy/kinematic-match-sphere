@@ -1,0 +1,156 @@
+
+% Test 1: Visual tests
+TEST_1 = false;
+z_k = 1.5;
+v_k = 0;
+N = 50;
+R_f = 10;
+rS = 1;
+dt = 1e-2;
+Tm = 1;
+mu = 1.68e-2;
+
+X = linspace(0, R_f*rS, ceil(R_f * N));
+Eta_k = exp(-(X.^2)/R_f) .* cos(linspace(0, 10, R_f*N));
+
+% Sphere Falling with initial condition on Eta.
+if TEST_1 == true
+    solveMotion2_1(rS, Tm, R_f, ...
+        'plotter', true, ...
+        'saveAfterContactEnded', false,  ...
+        'N', N, ...
+        'z_k', 1.5, ...
+        'v_k', -.2, ...
+        'exportData', false);
+end
+% Test 2:
+TEST_2 = false;
+z_k = 0;
+R_f = 105/2; % Membrane RADIUS (in mm)
+Tm = 107; %Linear tension of the material (in N / m = kg*m/(s2*m) = mg / ms^2)
+rS = 4.76/2; %(both in mm)
+mass = @(rS, rho) rho * (4*pi/3) * rS^3; % in mg
+rho = 3.25; %in g/cm3 = mg/mm^3
+v_0 = [0.4764, 0.5673, 0.7466]; %0.4764; %0.4971;% in  mm/ms = m/s
+mu = 0.3; %Density of membrane per unit of area (mg/mm^2) (Sara Wrap membrane)
+if TEST_2 == true
+    for ii = 1:length(v_0)
+        v_k = v_0(ii);
+        solveMotion2_1(rS, Tm, R_f/rS, mu, mass(rS, rho), ...
+            'v_k'     , -abs(v_k), ...
+            'N'       , 100,  ...
+            'plotter' , true, ...
+            'FileName', 'solveMotion2_1test.csv', ...
+            'exportData', true ...
+            );
+    end
+
+    rho = 7.93;
+    v_0 = [0.3702, 0.5480, 0.7273];
+    
+    for ii = 1:length(v_0)
+        v_k = v_0(ii);
+        solveMotion2_1(rS, Tm, R_f/rS, mu, mass(rS, rho), ...
+            'v_k'     , -abs(v_k), ...
+            'N'       , 100,  ...
+            'plotter' , true, ...
+            'FileName', 'solveMotion2_1test.csv', ...
+            'exportData', true ...
+            );
+    end
+    
+    save_path = pwd;
+    
+    cd D:\GITRepos\MyFiles\Matlab\WaveEq\'Plots and Graphs'\
+    plotter = @plotResults;
+    
+    close all;
+    
+    BDF2File = "D:\GITRepos\MyFiles\Matlab\WaveEq\AxiSymmetricv_2.1\simulations\solveMotion2_1test.csv";
+    
+    plotter(BDF2File, 'BDF2', 50, false, save_path, '');
+    
+    plotter("D:\GITRepos\MyFiles\Matlab\WaveEq\simulations\2022-04-03-experimental-paperupdate-T107\experimental_data.csv", ...
+        'experimental_new', 100, false, save_path, '(Experimental)');
+    
+    cd(save_path);
+end
+
+% Test 3: Full curvature, initial condition 
+TEST_3 = false;
+if TEST_3 == true
+    z_k = 1.5;
+    v_k = 0;
+    N = 25;
+    R_f = 10;
+    rS = 1;
+    dt = 1e-2;
+    Tm = 1;
+    mu = 0.3;
+    X = linspace(0, R_f*rS, ceil(R_f * N));
+    Eta_k = exp(-(X.^2)/R_f) .* cos(linspace(0, 10, R_f*N));
+    solveMotion2_1(rS, Tm, R_f, ...
+        'plotter', true, ...
+        'saveAfterContactEnded', false,  ...
+        'method', "BDF2FullCurvature", ...
+        'N', N, ...
+        'Eta_k', Eta_k, ...
+        'z_k', 2.5, ...
+        'v_k', -.0, ...
+        'exportData', false);
+end
+
+% Test 4: Comparing with experimental results
+
+TEST_4 = false;
+z_k = 0;
+R_f = 105/2; % Membrane RADIUS (in mm)
+Tm = 107; %Linear tension of the material (in N / m = kg*m/(s2*m) = mg / ms^2)
+rS = 4.76/2; %(both in mm)
+mass = @(rS, rho) rho * (4*pi/3) * rS^3; % in mg
+rho = 3.25; %in g/cm3 = mg/mm^3
+v_0 = [0.4764, 0.5673, 0.7466]; %0.4764; %0.4971;% in  mm/ms = m/s
+mu = 0.3; %Density of membrane per unit of area (mg/mm^2) (Sara Wrap membrane)
+
+v_k = v_0(2);
+
+if TEST_4 == true
+    disp("TEST 4");
+    solveMotion2_1(rS, Tm, R_f/rS, mu, mass(rS, rho), ...
+                'v_k'     , -abs(v_k), ...
+                'N'       , 100,  ...
+                'method', 'BDF2FullCurvature', ...
+                'plotter' , true, ...
+                'FileName', 'solveMotion2_1test.csv', ...
+                'exportData', false...
+                );
+end
+        
+% Test 4.2: COmparing with experimental results (2)
+TEST_4_2 = false;
+rho = 7.93;
+v_k = -0.6508;
+if TEST_4_2 == true
+    solveMotion2_1(rS, Tm, R_f/rS, mu, mass(rS, rho), ...
+                'v_k'     , -abs(v_k), ...
+                'N'       , 75,  ...
+                'method', 'BDF2FullCurvature', ...
+                'plotter' , true, ...
+                'FileName', 'solveMotion2_1test.csv', ...
+                'exportData', false...
+                );
+end
+
+
+% Test 5: Euler LInearized (in new setup)
+TEST_5 = true;
+v_k = 0.5673;
+if TEST_5 == true
+    solveMotion2_1('v_k'     , -abs(v_k), ...
+        'N'       , 75,  ...
+        'method', 'EulerLinearized', ...
+        'plotter' , true, ...
+        'FileName', 'solveMotion2_1test.csv', ...
+        'exportData', false...
+        );
+end

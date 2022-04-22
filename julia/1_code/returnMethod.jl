@@ -10,7 +10,8 @@ function returnMethod(method::String)::Function
 end
 
 function eulerLinearized(new_nb_cpoints::Int64, max_nb_cpoints::Int64, 
-        current_conditions::ProblemConditions, maximum_time_step::Float64, dt::Float64, 
+        current_conditions::ProblemConditions, previous_conditions::ProblemConditions, 
+        maximum_time_step::Float64, dt::Float64, 
         dr::Float64, Fr::Float64, Ntot::Int64, jacobian_pieces::Array{JacobianPiece}
     )::Tuple{ProblemConditions, Float64}
 

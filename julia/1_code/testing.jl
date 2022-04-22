@@ -15,8 +15,8 @@ for x in 0.2:0.1:π
     gui(); sleep(0.1)
 end
 
-#gif(anim) =#
-
+#= #gif(anim) =#
+using FileIO;
 function test()
     mech = NaN;
     a = 1;
@@ -28,7 +28,16 @@ function test()
             println(mech)
         end
     end    
+    println(pwd())
+    save("1_code/test.jld2", "mech", mech);
 end
 
 
-test()
+test() =#
+
+
+include("dummy_test.jl");
+
+errortan = 0
+A(3)
+println(errortan)

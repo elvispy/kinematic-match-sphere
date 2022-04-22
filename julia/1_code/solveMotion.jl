@@ -7,7 +7,7 @@
 using Printf;
 using Plots;
 default(legend = false);
-using FileIO;
+using JLD2, FileIO;
 using Dates;
 using CSV;
 using DataFrames;
@@ -16,20 +16,22 @@ using .problemStructsAndFunctions # Specialized structs and functions to be used
 
 # Main function
 function solve_motion(; # <== Keyword arguments!   
-     rS::Float64 = 2.38,       Tm::Float64 = 107.0,            R_f::Float64 = 22.0588,      η_k::Vector{Float64} = Float64[],
-     mS::Float64 = 183.528,     g::Float64 = 9.80665e-3,       z_k::Float64 = Inf,          u_k::Vector{Float64} = Float64[],    
+     rS::Float64 = 2.38,       Tm::Float64 = 107.0,            R_f::Float64 = NaN,         η_k::Vector{Float64} = Float64[],
+     mS::Float64 = NaN,         g::Float64 = 9.80665e-3,       z_k::Float64 = Inf,          u_k::Vector{Float64} = Float64[],    
       μ::Float64 = 0.3,         N::Int64 = 100, save_after_contact::Bool = false,           P_k::Vector{Float64} = Float64[],     
 plotter::Bool = false, recorded_time::Float64 = 0.0,     file_name::String="historial.csv", v_k::Float64 = -0.6312, 
- method::String = "EulerLinearized",                   export_data::Bool = true,            ρ_a::Float64 = 1.225e-3 
+ method::String = "EulerLinearized",                   export_data::Bool = true,            ρ_a::Float64 = 1.225e-3,
+ simul_time::Float64 = NaN
  )
 
-    if save_after_contact == false
+    if isnan(simul_time) == true
         simul_time = 20; 
     end
-
+    if isnan(R_f); R_f = 52.5/rS; end
+    if isnan(mS);  mS = 3.25 * 4 * pi * (rS.^3) / 3; end
     # Constants definitions
     Fr = (μ * rS * g)/Tm;
-    Mr = μ * rS^2 / mS;
+    Mr = μ * (rS^2) / mS;
     D = ρ_a * rS / μ;
 
     # Units
@@ -51,7 +53,7 @@ plotter::Bool = false, recorded_time::Float64 = 0.0,     file_name::String="hist
     if length(η_k) != Ntot
       η_k = initialConditionsLinearized(Fr, dr, Ntot); # TODO: Define this method and treat other cases (BDF2, Full curvature, etc)
     else
-      if size(η_k, 2) > 1; η_k = transpose(η_k); end 
+      if size(η_k, 2) > 1; η_k = vec(transpose(η_k)); end 
       η_k = η_k/length_unit;
     end
 
@@ -71,8 +73,6 @@ plotter::Bool = false, recorded_time::Float64 = 0.0,     file_name::String="hist
         z_k = z_k/length_unit;
     end
 
-    # Set sphere's velocity initial condition
-    v_k = v_k/velocity_unit;
 
     # Zero height to measure contact time experimentally
     ZERO_HEIGHT = η_k[1];
@@ -83,10 +83,13 @@ plotter::Bool = false, recorded_time::Float64 = 0.0,     file_name::String="hist
     probable_next_conditions = Array{ProblemConditions}(undef, 5);
     if recorded_time > 0; dt = recorded_time/time_unit; end
 
+    # Set sphere's velocity initial condition
+    v_k = v_k/velocity_unit;
 
     # TODO: Implement other cases (i.e. BDF2, Newton, etc)    
     if recorded_time == 0; dt = 1/( N*time_unit); end
     current_conditions = ProblemConditions(η_k, u_k, z_k, v_k, P_k, dt);
+    previous_conditions = retrievePreviousConditions(current_conditions, method); # TODO: implement one step method for BDF2.
 
     final_time = simul_time/time_unit; # Maximum time (dimensionless) to be simulated.
     initial_time = 0/time_unit; # Initial time (dimensionless)
@@ -94,7 +97,10 @@ plotter::Bool = false, recorded_time::Float64 = 0.0,     file_name::String="hist
     t = initial_time; # t is the variable that will keep track of the time
     current_index = 2; # Index of current matrix to save 
 
-    # TODO: Include getNextStep
+    initial_velocity = v_k * velocity_unit;
+    impact_velocity = NaN;
+
+    # Choose appropriate solver (Euler, BDF2, Newton, etc)
     getNextStep = returnMethod(method);
 
     returnMatrices = matrixGenerationMethod(method)
@@ -114,8 +120,7 @@ plotter::Bool = false, recorded_time::Float64 = 0.0,     file_name::String="hist
     iii = 0; jjj = 0; # Indexes to keep track  of subdivisions of maximum_time_step
     resetter = 0; # This variable controls how fast dt can grow
     
-
-    # TODO: Check file existence, create .csv
+    # Check file existence, create .csv
     A = match(r"[\\\/]([^\\\/]+)\.jl$", PROGRAM_FILE);
     if A !== nothing
         A = A[1];
@@ -126,7 +131,7 @@ plotter::Bool = false, recorded_time::Float64 = 0.0,     file_name::String="hist
     if isdir(SAVE_PATH) == false; mkpath(SAVE_PATH); end
     if isfile("$SAVE_PATH/$file_name") == false
         headers_data_frame = DataFrame(
-            ID = [],
+            ID  = [],
             vi = [],
             surfacetension = [],
             radius = [],
@@ -150,8 +155,6 @@ plotter::Bool = false, recorded_time::Float64 = 0.0,     file_name::String="hist
         θ = LinRange(0, 2*π, 500)
         circleX = length_unit * sin.(θ);
         circleY = length_unit * cos.(θ);
-
-
         # For animation:
         # https://stackoverflow.com/questions/58103056/erasing-previous-data-plots-in-julia-plots-jl-gr-backend
 
@@ -187,41 +190,44 @@ plotter::Bool = false, recorded_time::Float64 = 0.0,     file_name::String="hist
 
         # First, we try to solve with the same number of contact points
         probable_next_conditions[3], errortan[3] = getNextStep(contact_points, max_nb_contact_points,
-            current_conditions, maximum_time_step, dt, dr, Fr, Ntot, jacobian_pieces);
+            current_conditions, previous_conditions, maximum_time_step, dt, dr, Fr, Ntot, jacobian_pieces);
 
         if abs(errortan[3]) < 1e-8 # If almost no error, we accept the solution
-            current_conditions = probable_next_conditions[3];
+            previous_conditions = current_conditions;
+            current_conditions  = probable_next_conditions[3];
 
         else # If there is some error, we try with diffferent contact points
             # Lets try with one more point
             probable_next_conditions[4], errortan[4] = getNextStep(contact_points + 1, max_nb_contact_points,
-                current_conditions, maximum_time_step, dt, dr, Fr, Ntot, jacobian_pieces);
+                current_conditions, previous_conditions, maximum_time_step, dt, dr, Fr, Ntot, jacobian_pieces);
             # Lets try with one point less
             probable_next_conditions[2], errortan[2] = getNextStep(contact_points - 1, max_nb_contact_points,
-                current_conditions, maximum_time_step, dt, dr, Fr, Ntot, jacobian_pieces);
+                current_conditions, previous_conditions, maximum_time_step, dt, dr, Fr, Ntot, jacobian_pieces);
             
-            if (abs(errortan[3]) > abs(errortan[4]) ||  abs(errortan[3]) > abs(errortan[2]))
+            if (abs(errortan[3]) > abs(errortan[4]) ||  (abs(errortan[3]) > abs(errortan[2])))
                 if abs(errortan[4]) <= abs(errortan[2])
                     # Now lets check with one more point to be sure
                     _, errortan[5] = getNextStep(contact_points + 2, max_nb_contact_points, 
-                        current_conditions, maximum_time_step, dt, dr, Fr, Ntot, jacobian_pieces);
+                        current_conditions, previous_conditions, maximum_time_step, dt, dr, Fr, Ntot, jacobian_pieces);
 
                     if abs(errortan[4]) < abs(errortan[5])
                         # Accept new data 
-                        current_conditions = probable_next_conditions[4];
-                        contact_points = contact_points + 1;
+                        previous_conditions = current_conditions;
+                        current_conditions  = probable_next_conditions[4];
+                        contact_points      = contact_points + 1;
                     else
                         recalculate = true;
                     end
                 else
                     # now lets check if errortan is good enough with one point less
                     _, errortan[1] = getNextStep(contact_points - 2, max_nb_contact_points,
-                    current_conditions, maximum_time_step, dt, dr, Fr, Ntot, jacobian_pieces);
+                    current_conditions, previous_conditions, maximum_time_step, dt, dr, Fr, Ntot, jacobian_pieces);
 
                     if abs(errortan[2]) < abs(errortan[1])
                         # Accept new data
-                        current_conditions = probable_next_conditions[2];
-                        contact_points = contact_points - 1;
+                        previous_conditions = current_conditions;
+                        current_conditions  = probable_next_conditions[2];
+                        contact_points      = contact_points - 1;
                     else
                         recalculate = true;
                     end 
@@ -232,7 +238,8 @@ plotter::Bool = false, recorded_time::Float64 = 0.0,     file_name::String="hist
                     recalculate = true;
                 else
                     # Accept new data
-                    current_conditions = probable_next_conditions[3];
+                    previous_conditions = current_conditions;
+                    current_conditions  = probable_next_conditions[3];
                 end
             end
         end
@@ -244,7 +251,7 @@ plotter::Bool = false, recorded_time::Float64 = 0.0,     file_name::String="hist
         else
             t = t + dt; jjj = jjj + 1;
             if mod(jjj, 2) == 0 && resetter > 0
-                jjj = jjj / 2;
+                jjj = div(jjj, 2); 
                 iii = iii - 1;
                 # Increase time step
                 dt = 2 * dt;
@@ -255,10 +262,10 @@ plotter::Bool = false, recorded_time::Float64 = 0.0,     file_name::String="hist
             # Update Indexes if necessary and store results into a matrix
             if current_index > maximum_index
                 recorded_z = [recorded_z; zeros(number_of_extra_indexes, 1)];
-                recorded_η = [recorded_Eta;   zeros(number_of_extra_indexes, Ntot)];
-                recorded_u = [recorded_u;   zeros(number_of_extra_indexes, Ntot)];
-                recorded_P = [recorded_P;    zeros(number_of_extra_indexes, max_nb_cPoints)];
-                recorded_v = [recorded_v;   zeros(number_of_extra_indexes, 1)];
+                recorded_η = [recorded_η; zeros(number_of_extra_indexes, Ntot)];
+                recorded_u = [recorded_u; zeros(number_of_extra_indexes, Ntot)];
+                recorded_P = [recorded_P; zeros(number_of_extra_indexes, max_nb_contact_points)];
+                recorded_v = [recorded_v; zeros(number_of_extra_indexes, 1)];
                 recorded_t = [recorded_t; zeros(number_of_extra_indexes, 1)];
                 maximum_index = maximum_index + number_of_extra_indexes;
                 number_of_extra_indexes = 0;
@@ -285,8 +292,9 @@ plotter::Bool = false, recorded_time::Float64 = 0.0,     file_name::String="hist
 
             if plotter == true
                 # TODO: plot results
-                tt = @sprintf(" t = %.5f (ms), CP = %g, vz = %.5f (mm/ms)", 
-                    (t*time_unit), contact_points, current_conditions.v_k * velocity_unit
+                tt = @sprintf(" t = %.5f (ms), CP = %g, vz = %.5f (mm/ms), centre = %.5f (mm)", 
+                    (t*time_unit), contact_points, current_conditions.v_k * velocity_unit,
+                    current_conditions.η_k[1] * length_unit
                 );
                 plot(circleX, circleY .+ recorded_z[current_index - 1],
                     xlabel = "r/R",
@@ -298,14 +306,14 @@ plotter::Bool = false, recorded_time::Float64 = 0.0,     file_name::String="hist
                     location = (5, 5),
                     title = tt
                 );
-                η_k = current_conditions.η_k;
-                ηY = [η_k[plot_width:-1:2]; η_k[1:plot_width]] * length_unit;
+                η_k_plot = current_conditions.η_k;
+                ηY = [η_k_plot[plot_width:-1:2]; η_k_plot[1:plot_width]] * length_unit;
                 plot!(ηX, ηY, linedwidth = 1.5, color = :gray);
 
                 gui();
             else
-                @printf("t = %.5f (ms), CP = %g, vz = %.5f (mm/ms) \n", 
-                    t * time_unit, contact_points, current_conditions.v_k * velocity_unit);
+                @printf("t = %.10f (ms), CP = %g, vz = %.10f (mm/ms), centre = %.10f (mm) \n", 
+                    t * time_unit, contact_points, current_conditions.v_k * velocity_unit, current_conditions.z_k * length_unit);
             end
 
             ####
@@ -350,6 +358,9 @@ plotter::Bool = false, recorded_time::Float64 = 0.0,     file_name::String="hist
                 if first_fall_flag == true # If velocity has changed sign, record maximum
                     maximum_deflection = maximum_deflection - recorded_z[current_index - 2];
                     first_fall_flag = false;
+                    println("t = $(t*time_unit)");
+                    println("vk = $(current_conditions.v_k * velocity_unit)");
+                    println("contact_points = $contact_points");
                 end
             end
 
@@ -367,11 +378,11 @@ plotter::Bool = false, recorded_time::Float64 = 0.0,     file_name::String="hist
     ###
 
     # Round and dimentionalize contact time
-    contact_time = round(contact_time * time_unit, digits = 10);
-    lab_contact_time = round(lab_contact_time * time_unit, digits = 10);
-    maximum_deflection = round(maximum_deflection, digits = 10); # Round maximum deflection 
-    maximum_time_step = maximum_time_step * time_unit;
-    coef_of_restitution = mechanical_energy_out/mechanical_energy_in;
+    contact_time            = round(contact_time * time_unit, digits = 10);
+    lab_contact_time        = round(lab_contact_time * time_unit, digits = 10);
+    maximum_deflection      = round(maximum_deflection, digits = 10); # Round maximum deflection 
+    maximum_time_step       = maximum_time_step * time_unit;
+    coef_of_restitution     = mechanical_energy_out/mechanical_energy_in;
     lab_coef_of_restitution = lab_mechanical_energy_out/mechanical_energy_in;
 
     if export_data == true
@@ -388,22 +399,39 @@ plotter::Bool = false, recorded_time::Float64 = 0.0,     file_name::String="hist
 
         # Save data into a .jdl2 file
         exported_data_name = Dates.format(now(), "yyyymmddHHMMss");
-        SAVE_PATH = "$SAVE_PATH\\$exported_data_name.jdl2" ;
-        save(SAVE_PATH, "impact_velocity", "contact_time", "lab_contact_time", "maximum_deflection",
-            "recorded_η", "recorded_u", "recorded_z", "recorded_P", "recordedTimes", "recorded_v", 
-             "Tm", "mu", "rS", "rt", "v_k", "N", "mS", 
-            "coefOfRestitution", "labcoefOfRestitution");
+        
+        save("$SAVE_PATH/$exported_data_name.jld2", 
+            "impact_velocity"       , impact_velocity,
+            "contact_time"          , contact_time,
+            "lab_contact_time"      , lab_contact_time, 
+            "maximum_deflection"    , maximum_deflection,
+            "recorded_η"            , recorded_η,
+            "recorded_u"            , recorded_u,
+            "recorded_z"            , recorded_z,
+            "recorded_P"            , recorded_P,
+            "recorded_t"            , recorded_t,
+            "recorded_v"            , recorded_v,
+            "Tm"                    , Tm,
+            "mu"                    , μ,
+            "rS"                    , rS,
+            "recorded_time"         , recorded_time,
+            "initial_velocity"      , initial_velocity, 
+            "N"                     , N,
+            "mS"                    , mS, 
+            "coef_of_restitution"   , coef_of_restitution,
+           "lab_coef_of_restitution", lab_coef_of_restitution
+        );
         
         data_to_write = DataFrame(
-            ID = exported_data_name,
-            vi = impact_velocity,
-            surfaceTension = Tm,
-            redius = rS,
-            cTime = contact_time,
-            maxDeflection = maximum_deflection,
-            coefOfRestitution = coef_of_restitution,
-            Density = density,
-            labcTime = lab_contact_time, 
+            ID                   = exported_data_name,
+            vi                   = impact_velocity,
+            surfaceTension       = Tm,
+            redius               = rS,
+            cTime                = contact_time,
+            maxDeflection        = maximum_deflection,
+            coefOfRestitution    = coef_of_restitution,
+            Density              = density,
+            labcTime             = lab_contact_time, 
             labcoefOfRestitution = lab_coef_of_restitution
         );
         CSV.write("$SAVE_PATH/$file_name", data_to_write, append = true);
@@ -428,5 +456,5 @@ function get_current_wd()::String
 end
 
 if (abspath(PROGRAM_FILE) == @__FILE__) || occursin(r"debugger"i, PROGRAM_FILE)
-    solve_motion(plotter = true, N = 50);
+    solve_motion(Tm = 1.0, v_k = -0.1, plotter = false, N = 50, export_data = false);
 end

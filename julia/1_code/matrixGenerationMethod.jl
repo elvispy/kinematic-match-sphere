@@ -104,9 +104,9 @@ function int_vector(n::Int64)::Vector{Float64}
     if n == 0
         return zeros((0, ));
     elseif n == 1;
-        return [π/12];
+        return Float64[π/12];
     else
-        S = π * ones((n, ));
+        S = π * ones(Float64, (n, ));
         S[1] = S[1] / 3;
         for ii = 2:(n-1)
             S[ii] = 2 * (ii - 1) * S[ii];

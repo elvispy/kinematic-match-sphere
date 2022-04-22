@@ -1,6 +1,6 @@
 module problemStructsAndFunctions
 export ProblemConditions, JacobianPiece, initialConditionsLinearized, 
-    returnMethod, matrixGenerationMethod
+    returnMethod, matrixGenerationMethod, retrievePreviousConditions
 
 # Struct definitions
 struct ProblemConditions
@@ -22,5 +22,6 @@ end
 include("./initialConditionsLinearized.jl");
 include("./matrixGenerationMethod.jl");
 include("./returnMethod.jl")
+include("./retrievePreviousConditions.jl")
 
 end

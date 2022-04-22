@@ -169,7 +169,6 @@ plotter::Bool = false, recorded_time::Float64 = 0.0,     file_name::String="hist
     recorded_P = zeros(maximum_index, max_nb_contact_points);
     recorded_v = zeros((maximum_index, )); recorded_v[1] = v_k * velocity_unit;
     recorded_t = zeros((maximum_index, )); recorded_t[1] = initial_time * time_unit;
-    # TODO: record variables as line 227 
 
     # Coefficient of restitution
     mechanical_energy_in = NaN;
@@ -291,7 +290,7 @@ plotter::Bool = false, recorded_time::Float64 = 0.0,     file_name::String="hist
             end
 
             if plotter == true
-                # TODO: plot results
+                # Plot current conditions
                 tt = @sprintf(" t = %.5f (ms), CP = %g, vz = %.5f (mm/ms), centre = %.5f (mm)", 
                     (t*time_unit), contact_points, current_conditions.v_k * velocity_unit,
                     current_conditions.η_k[1] * length_unit
@@ -301,14 +300,14 @@ plotter::Bool = false, recorded_time::Float64 = 0.0,     file_name::String="hist
                     ylabel = "z/R",
                     xlims = [-plot_width*length_unit/N, plot_width*length_unit/N],
                     ylims = [-plot_width*length_unit/N + length_unit/2, plot_width*length_unit/N + length_unit/2],
-                    linewidth = 1.5,
+                    linewidth = 2.5,
                     size = (860, 720),
                     location = (5, 5),
                     title = tt
                 );
                 η_k_plot = current_conditions.η_k;
                 ηY = [η_k_plot[plot_width:-1:2]; η_k_plot[1:plot_width]] * length_unit;
-                plot!(ηX, ηY, linedwidth = 1.5, color = :gray);
+                plot!(ηX, ηY, linedwidth = 3.5, color = :gray);
 
                 gui();
             else
@@ -322,7 +321,6 @@ plotter::Bool = false, recorded_time::Float64 = 0.0,     file_name::String="hist
             if (contact_flag == false && contact_points > 0) # if contact began, start counting
                 contact_flag = true;
                 maximum_deflection = recorded_z[current_index - 2, 1]; # Store position for later use, remember, it has dimensions!
-                # TODO: vars in matlab # Store initial impact velocity
                 impact_velocity = round(recorded_v[current_index - 2], digits = 10); # Store initial impact velocity.
                 zero_potential = recorded_η[current_index - 2, 1] + rS; # Store our zero-Potential 
                 mechanical_energy_in = 1/2 * mS * ((recorded_v[current_index - 2])^2); # Mechanical energy at contact time
@@ -430,7 +428,7 @@ plotter::Bool = false, recorded_time::Float64 = 0.0,     file_name::String="hist
             cTime                = contact_time,
             maxDeflection        = maximum_deflection,
             coefOfRestitution    = coef_of_restitution,
-            Density              = density,
+            Density              = 3*mS/(4*pi*rS^3),
             labcTime             = lab_contact_time, 
             labcoefOfRestitution = lab_coef_of_restitution
         );
@@ -456,5 +454,5 @@ function get_current_wd()::String
 end
 
 if (abspath(PROGRAM_FILE) == @__FILE__) || occursin(r"debugger"i, PROGRAM_FILE)
-    solve_motion(Tm = 1.0, v_k = -0.1, plotter = false, N = 50, export_data = false);
+    solve_motion(plotter = true);
 end

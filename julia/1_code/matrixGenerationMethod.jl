@@ -1,6 +1,9 @@
 using .problemStructsAndFunctions: JacobianPiece
 using LinearAlgebra: I
 using SparseArrays;
+# DEBUGGING
+# using CSV, Tables
+# END DEBUGGING
 
 function matrixGenerationMethod(method::String)::Function
     if occursin(r"linear"i, method)
@@ -84,6 +87,11 @@ function returnLinearizedMatrices(previous_jacobian_pieces::Array{JacobianPiece}
         time_dependent_part = myA;
         constant_part = sparse(rows, cols, ones((length(cols), )));
         full_jacobian = constant_part + maximum_time_step * time_dependent_part;
+        # DEBUGGING
+        #CSV.write("./2_pipeline/matrixCP$(new_nb_contact_points)_full.csv",  Tables.table(Matrix(full_jacobian)), writeheader = false);
+        #CSV.write("./2_pipeline/matrixCP$(new_nb_contact_points)_const.csv", Tables.table(Matrix(constant_part)), writeheader = false);
+        #CSV.write("./2_pipeline/matrixCP$(new_nb_contact_points)_time.csv",  Tables.table(Matrix(time_dependent_part)), writeheader = false);
+        # END DEBUGGING
         previous_jacobian_pieces[new_nb_contact_points + 1] = JacobianPiece(
             full_jacobian,
             constant_part,
@@ -111,7 +119,7 @@ function int_vector(n::Int64)::Vector{Float64}
         for ii = 2:(n-1)
             S[ii] = 2 * (ii - 1) * S[ii];
         end
-        S[n] = (3/2 - (n-1) - 1/4) * S[n];
+        S[n] = (3/2 * (n-1) - 1/4) * S[n];
         return S;
     end
 end

@@ -1,4 +1,7 @@
 using LinearAlgebra;
+# DEBUGGING
+# using CSV, Tables;
+# END DEBUGGING
 
 function initialConditionsLinearized(Fr::Float64, dr::Float64, 
     Ntot::Int64)::Vector{Float64}
@@ -11,5 +14,9 @@ function initialConditionsLinearized(Fr::Float64, dr::Float64,
     end
     A_prime[Ntot, Ntot - 1] =  -(1)/(2*dr^2) * (2*Ntot-3)/(2*Ntot-2);
     R = -Fr * ones(Ntot, 1);
+    # DEBUGGING
+    # CSV.write("./2_pipeline/Ntot$(Ntot)dr$(dr)Fr$(Fr).csv", Tables.table(vec((A_prime\R)/2)), writeheader = false);
+    # END DEBUGGING
+
     return vec((A_prime\R)/2);
 end

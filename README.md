@@ -1,8 +1,9 @@
 # Kinematic Match: The case of a rigid sphere and an elastic membrane
 This repository serves a supplementary material for [this article](google.com). Here we provide code in Julia, Matlab and Python to simulate an axis-symmetric impact between a rigid sphere and an elastic thin membrane.
 
+
 <p align="center">
-    ![3D Example](https://user-images.githubusercontent.com/51973026/164895999-b7d0b276-0552-4798-adba-aeb5138f92dd.gif)
+  <img width="460" height="300" src="https://user-images.githubusercontent.com/51973026/164895999-b7d0b276-0552-4798-adba-aeb5138f92dd.gif">
 </p>
 ## Usage
 

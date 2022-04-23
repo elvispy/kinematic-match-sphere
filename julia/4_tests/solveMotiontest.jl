@@ -16,7 +16,7 @@ Eta_k = @. exp(-(X^2)/R_f) * cos(X/rS);
 
 # Sphere Falling with initial condition on Eta.
 if TEST_1 == true
-    solve_motion(N =N, 
+    solveMotion(N =N, 
         η_k = Eta_k,
         R_f = 10.0,
         rS = rS,

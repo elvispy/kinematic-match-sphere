@@ -15,7 +15,7 @@ include("./problemStructsAndFunctions.jl");
 using .problemStructsAndFunctions # Specialized structs and functions to be used in this code
 
 # Main function
-function solve_motion(; # <== Keyword arguments!   
+function solveMotion(; # <== Keyword arguments!   
      rS::Float64 = 2.38,       Tm::Float64 = 107.0,            R_f::Float64 = NaN,         η_k::Vector{Float64} = Float64[],
      mS::Float64 = NaN,         g::Float64 = 9.80665e-3,       z_k::Float64 = Inf,          u_k::Vector{Float64} = Float64[],    
       μ::Float64 = 0.3,         N::Int64 = 100, save_after_contact::Bool = false,           P_k::Vector{Float64} = Float64[],     
@@ -454,5 +454,5 @@ function get_current_wd()::String
 end
 
 if (abspath(PROGRAM_FILE) == @__FILE__) || occursin(r"debugger"i, PROGRAM_FILE)
-    solve_motion(plotter = true);
+    solveMotion(plotter = true);
 end

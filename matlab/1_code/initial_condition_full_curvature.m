@@ -1,6 +1,6 @@
 function eta = initial_condition_full_curvature(Fr, dr, Ntot)
     
-    
+    % TODO: Save in memory this initial condition
     %% Solving the system
     NEWTON_METHOD_TRESHOLD = 1e-10;
     Eta_k = zeros(Ntot, 1);

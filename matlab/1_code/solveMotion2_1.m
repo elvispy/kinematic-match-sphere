@@ -1,12 +1,13 @@
 % Author: Elvis Agüero
 % email: elvisavfc65@gmail.com
-% Date: March 31th, 2022.
+% Date: July 30th, 2022.
 
 function solveMotion2_1(options)
     %solveMotion_2.1
     %Tries to solve the kinematic match between a rigid spherical object
     %and an axissymmetric membrane in vacuum conditions, Newton's Method and 
-    % BDF2 finite differences.
+    % BDF2 finite differences, taking into account the elastic modulus of
+    % the membrane.
     
     %% Handling default values
     arguments
@@ -24,6 +25,8 @@ function solveMotion2_1(options)
         options.mS (1, 1) {mustBePositive} = inf
         %Gravity of earth (in mm/ms^2)
         options.g (1, 1) {mustBePositive} = 9.80665e-3 %(mm/ms2);
+        % Elastic modulus v In mg / ms
+        options.vu (1, 1) = 0;
         
         options.z_k   (1, 1) {mustBeReal}    = inf % in mm
         options.v_k   (1, 1) {mustBeReal}    = -0.6312 % in mm/ms, as in the paper
@@ -40,22 +43,24 @@ function solveMotion2_1(options)
         options.method                (1, 1) string {mustBeMember(options.method, ...
         ["EulerLinearized", "EulerFullCurvature", ...
         "BDF2Linearized", "BDF2FullCurvature"])}              = "EulerLinearized"
-        options.saveAfterContactEnded (1, 1) logical          = false
-        options.exportData            (1, 1) logical          = true
+        options.save_after_contact_ended (1, 1) logical          = false
+        options.export_data              (1, 1) logical          = true
     end
     
-    if options.saveAfterContactEnded == false
+    if options.save_after_contact_ended == false
         options.SimulTime = 20; 
     end
     
-     mu = options.mu; rS = options.rS; Tm = options.Tm; g = options.g;
+    mu = options.mu; rS = options.rS; Tm = options.Tm; g = options.g; vu = options.vu;
     if isinf(options.R_f); R_f = 52.5/rS; else; R_f = options.R_f; end
     if isinf(options.mS); mS = 3.25 * 4 * pi * (rS.^3) / 3; else; mS = options.mS; end
-    %% CONSTANTS' DEFINITIONS
+    
+    %% ADIMENSIONAL CONSTANTS
     
     Fr = (mu*rS*g)/Tm; %Froude number
     Mr = mu*(rS^2)/mS; %Ratio of masses1
     D = options.rhoa * rS / mu;
+    Vu = vu * sqrt(Tm/mu)/(Tm * rS); 
 
     %Units (Just for the record)
     Lunit = rS; %Spatial unit of mesurement (in mm)
@@ -235,7 +240,7 @@ function solveMotion2_1(options)
     Em_out = nan; labEm_out = nan;
 
     jacobian_pieces = cell(max_nb_cPoints + 1, 1);
-    jacobian_pieces = returnMatrices2_1(jacobian_pieces, Ntot, dr, Mr);
+    jacobian_pieces = returnMatrices2_1(jacobian_pieces, Ntot, dr, Mr, Vu);
     
     indexes_to_save = zeros(maximum_index, 1); indexes_to_save(1) = 1;
     current_to_save = 2;
@@ -247,7 +252,7 @@ function solveMotion2_1(options)
 
         % If empty, allocate more space for matrices.
         if isempty(jacobian_pieces{cPoints + 3}) == true
-            jacobian_pieces = returnMatrices2_1(jacobian_pieces, Ntot, dr, Mr);
+            jacobian_pieces = returnMatrices2_1(jacobian_pieces, Ntot, dr, Mr, Vu);
         end
         %First, we try to solve with the same number of contact points
         [probableNextConditions{3}, errortan(3)] = getNextStep(cPoints, max_nb_cPoints, ...
@@ -420,7 +425,7 @@ function solveMotion2_1(options)
                     cTime = cTime + dt;
                 end
             end
-            if options.saveAfterContactEnded == false && recorded_u(current_index - 1, 1) < 0 &&...
+            if options.save_after_contact_ended == false && recorded_u(current_index - 1, 1) < 0 &&...
                     velocityOutRecorded == true && labvelocityOutRecorded == true
                 break; % end simulation if contact ended.
             end
@@ -440,7 +445,7 @@ function solveMotion2_1(options)
                 if velocityOutRecorded    == false; cTime    = inf; end
                 if labvelocityOutRecorded == false; labcTime = inf; end
                 
-                if options.saveAfterContactEnded == false
+                if options.save_after_contact_ended == false
                     break;
                 end
             end
@@ -463,7 +468,7 @@ function solveMotion2_1(options)
     coefOfRestitution = Em_out/Em_in;
     labcoefOfRestitution = labEm_out/Em_in;
     
-    if options.exportData == true 
+    if options.export_data == true 
         %%%
         %%% TODO LO QUE SE EXPORTA ES DIMENSIONAL
         %%%

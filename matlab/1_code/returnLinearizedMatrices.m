@@ -1,12 +1,14 @@
-function jacobian_pieces = returnLinearizedMatrices(previous_jacobian_pieces, Ntot, dr, Mr)
+function jacobian_pieces = returnLinearizedMatrices(previous_jacobian_pieces, Ntot, dr, Mr, Vu)
 
-% count how many entries are there
+% count how many entries are not empty
 empty_indexes = sum(~cellfun(@isempty, previous_jacobian_pieces));
 jacobian_pieces = previous_jacobian_pieces;
 
+% Some building blocks
 I_M = speye(Ntot);
 Z_M = sparse(Ntot, Ntot);
 
+% Submatrix corresponding to the discretized laplacian
 A_prime = 2 * eye(Ntot);
 A_prime(1, 1) = 4;
 A_prime(1, 2) = -4;
@@ -19,18 +21,22 @@ for i = 2:Ntot
 end
 A_prime = (1 / dr^2) * A_prime;
 
-A_2 = [-I_M; Z_M; sparse(2, Ntot)];
-A_3 = [ Z_M; I_M; sparse(2, Ntot)];
+% A_i corresponds to a column-block. A_2 is related to membrane velocity,
+% A_3 to pressure
+A_2 = [-I_M; Vu * A_prime; sparse(2, Ntot)];
+A_3 = [ Z_M;      I_M;     sparse(2, Ntot)];
 
 output_path = sprintf("../2_pipeline/%s/out", mfilename');
 
 if isfolder(output_path) == false; mkdir(output_path); end
 for newCPoints = empty_indexes:(empty_indexes + 10)
-    file_name = fullfile(output_path, sprintf("Ntot%gCP%gdr%gMr%g.mat", Ntot, newCPoints, dr, Mr));
+    file_name = fullfile(output_path, sprintf("CP%gdr%gNtot%gMr%gVu%g.mat", ...
+        newCPoints, dr, Ntot, Mr, Vu));
     
     if (isfile(file_name) == true) % TODO: See an alternative way of storing these matrices
         load(file_name, 'time_dependent', 'constant', 'residual_1');
     else
+        % Storing matrix in index notation (non-time dependent parts)
         i = zeros(2*Ntot - newCPoints + 2, 1);
         j = zeros(2*Ntot - newCPoints + 2, 1);
 
@@ -86,7 +92,7 @@ for newCPoints = empty_indexes:(empty_indexes + 10)
     jacobian_pieces{newCPoints + 1} = struct();
     jacobian_pieces{newCPoints+1}.A = time_dependent;
     jacobian_pieces{newCPoints+1}.residual_1 = residual_1;
-    jacobian_pieces{newCPoints+1}.ones =  constant;
+    jacobian_pieces{newCPoints+1}.ones = constant;
     
     
     

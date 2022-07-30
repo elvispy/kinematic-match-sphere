@@ -126,7 +126,7 @@ plotter::Bool = false, recorded_time::Float64 = 0.0,     file_name::String="hist
         A = A[1];
         SAVE_PATH = "./2_pipeline/$A/out";
     else
-        SAVE_PATH = "./2_pipeline/default/out";
+        SAVE_PATH = "../2_pipeline/default/out";
     end
     if isdir(SAVE_PATH) == false; mkpath(SAVE_PATH); end
     if isfile("$SAVE_PATH/$file_name") == false

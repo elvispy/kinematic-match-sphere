@@ -40,11 +40,11 @@ function solveMotion2_1(options)
         options.method                (1, 1) string {mustBeMember(options.method, ...
         ["EulerLinearized", "EulerFullCurvature", ...
         "BDF2Linearized", "BDF2FullCurvature"])}              = "EulerLinearized"
-        options.saveAfterContactEnded (1, 1) logical          = false
+        options.save_after_contact_ended (1, 1) logical          = false
         options.exportData            (1, 1) logical          = true
     end
     
-    if options.saveAfterContactEnded == false
+    if options.save_after_contact_ended == false
         options.SimulTime = 20; 
     end
     
@@ -190,7 +190,7 @@ function solveMotion2_1(options)
     end
     
     %Now we save the sphere in an array (For plotting)
-    width = ceil(3 * N);
+    width = min(Ntot, ceil(3 * N));
     xplot = linspace(0, width/N, width);
     EtaX = [-fliplr(xplot(2:end)), xplot] * Lunit;
     %EtaU = zeros(1, 2*width - 1);
@@ -420,7 +420,7 @@ function solveMotion2_1(options)
                     cTime = cTime + dt;
                 end
             end
-            if options.saveAfterContactEnded == false && recorded_u(current_index - 1, 1) < 0 &&...
+            if options.save_after_contact_ended == false && recorded_u(current_index - 1, 1) < 0 &&...
                     velocityOutRecorded == true && labvelocityOutRecorded == true
                 break; % end simulation if contact ended.
             end
@@ -440,7 +440,7 @@ function solveMotion2_1(options)
                 if velocityOutRecorded    == false; cTime    = inf; end
                 if labvelocityOutRecorded == false; labcTime = inf; end
                 
-                if options.saveAfterContactEnded == false
+                if options.save_after_contact_ended == false
                     break;
                 end
             end

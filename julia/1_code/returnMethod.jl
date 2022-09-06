@@ -29,9 +29,9 @@ function eulerLinearized(new_nb_cpoints::Int64, max_nb_cpoints::Int64,
         gravity_influence = [zeros((Ntot - new_nb_cpoints, )); (-Fr * dt) * ones((Ntot, )); 0; (-Fr * dt)];
         exact_curvature = [zeros((Ntot - new_nb_cpoints, )); 2*dt * ones((new_nb_cpoints, )); 
                 zeros((Ntot - new_nb_cpoints + 2, ))];
-        f(x) = @. sqrt(1-dr^2 * x^2);
+        f(x) = @. sqrt(1-(dr * x)^2);
 
-        residual_1 = zeros((2 * Ntot + 2, new_nb_cpoints));
+        residual_1 = deepcopy(jacobian_pieces[new_nb_cpoints + 1].residual);#zeros((2 * Ntot + 2, new_nb_cpoints));
         if new_nb_cpoints > 0
             val = dt * jacobian_pieces[new_nb_cpoints+1].residual[Ntot + new_nb_cpoints + 1, end];
             residual_1[Ntot + new_nb_cpoints + 1, end] = val;                

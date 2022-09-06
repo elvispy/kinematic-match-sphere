@@ -14,15 +14,15 @@ function matrixGenerationMethod(method::String)::Function
 end
 
 function returnLinearizedMatrices(previous_jacobian_pieces::Array{JacobianPiece}, 
-    Ntot::Int64, dr::Float64, Mr::Float64, maximum_time_step::Float64)::Array{JacobianPiece}
+    Ntot::Int64, dr::Float64, Mr::Float64, maximum_time_step::Float64, Vu::Float64)::Array{JacobianPiece}
     first_empty_index = 0;
     while isassigned(previous_jacobian_pieces, first_empty_index + 1) == true && first_empty_index < 10010
         first_empty_index  = first_empty_index + 1;
     end
     @assert first_empty_index < 10000;
-    I_M = spdiagm(0 => ones(Float64, Ntot));
+    I_M = spdiagm(0 => ones(Float64, Ntot)); #Sparse diagonal matrix
     Z_M = spzeros(Ntot, Ntot);
-    eye(N::Int64)::Matrix{Float64} = Matrix(1.0I, N, N);
+    eye(N::Int64)::Matrix{Float64} = Matrix(1.0I, N, N); #Redefinition
     A_prime = 2 * eye(Ntot);
     A_prime[1, 1] =  4;
     A_prime[1, 2] = -4;
@@ -35,8 +35,8 @@ function returnLinearizedMatrices(previous_jacobian_pieces::Array{JacobianPiece}
     end
     A_prime = (1/ dr^2) * A_prime;
 
-    A_2 = [-I_M; Z_M; spzeros(2, Ntot)];
-    A_3 = [ Z_M; I_M; spzeros(2, Ntot)];
+    A_2 = [-I_M; Vu * deepcopy(A_prime) ; spzeros(2, Ntot)];
+    A_3 = [ Z_M;           I_M; spzeros(2, Ntot)];
 
     for new_nb_contact_points = first_empty_index:(first_empty_index + 10)
         rows = zeros(Int64, (2 * Ntot - new_nb_contact_points + 2, ));
@@ -61,7 +61,7 @@ function returnLinearizedMatrices(previous_jacobian_pieces::Array{JacobianPiece}
         myA_2 = myA_2[:, (new_nb_contact_points+1):end];
 
         rows[(Ntot - new_nb_contact_points + 1):(2*Ntot - 2*new_nb_contact_points)] = 
-        (Ntot + 1):(2*Ntot - new_nb_contact_points);
+            (Ntot + 1):(2*Ntot - new_nb_contact_points);
         cols[(Ntot - new_nb_contact_points + 1):(2*Ntot - 2*new_nb_contact_points)] = 
             (Ntot -new_nb_contact_points + 1):(2*Ntot - 2*new_nb_contact_points);
         

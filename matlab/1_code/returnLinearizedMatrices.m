@@ -13,10 +13,10 @@ A_prime = 2 * eye(Ntot);
 A_prime(1, 1) = 4;
 A_prime(1, 2) = -4;
 
-for i = 2:Ntot
-   A_prime(i, i-1) = -(2*i-3)/(2*i-2);
-   if i < Ntot
-       A_prime(i, i+1) = -(2*i-1)/(2*i-2);
+for rows = 2:Ntot
+   A_prime(rows, rows-1) = -(2*rows-3)/(2*rows-2);
+   if rows < Ntot
+       A_prime(rows, rows+1) = -(2*rows-1)/(2*rows-2);
    end
 end
 A_prime = (1 / dr^2) * A_prime;
@@ -37,8 +37,8 @@ for newCPoints = empty_indexes:(empty_indexes + 10)
         load(file_name, 'time_dependent', 'constant', 'residual_1');
     else
         % Storing matrix in index notation (non-time dependent parts)
-        i = zeros(2*Ntot - newCPoints + 2, 1);
-        j = zeros(2*Ntot - newCPoints + 2, 1);
+        rows = zeros(2*Ntot - newCPoints + 2, 1);
+        cols = zeros(2*Ntot - newCPoints + 2, 1);
 
         myA_prime = A_prime;
         myA_prime(1:newCPoints, :) = zeros(newCPoints, Ntot);
@@ -52,21 +52,21 @@ for newCPoints = empty_indexes:(empty_indexes + 10)
         % we didnt add a diagonal term
         myA_1 = myA_1(:, (newCPoints+1):end);
 
-        i(1:(Ntot - newCPoints)) = 1:(Ntot - newCPoints);
-        j(1:(Ntot - newCPoints)) = 1:(Ntot - newCPoints);
+        rows(1:(Ntot - newCPoints)) = 1:(Ntot - newCPoints);
+        cols(1:(Ntot - newCPoints)) = 1:(Ntot - newCPoints);
 
         myA_2 = A_2;
         residual_2 = myA_2(:, 1:newCPoints);
         myA_2 = myA_2(:, (newCPoints+1):end);
 
-        i((Ntot - newCPoints + 1):(2*Ntot - 2*newCPoints)) = ...
+        rows((Ntot - newCPoints + 1):(2*Ntot - 2*newCPoints)) = ...
             (Ntot + 1):(2*Ntot - newCPoints);
-        j((Ntot - newCPoints + 1):(2*Ntot - 2*newCPoints)) = ...
+        cols((Ntot - newCPoints + 1):(2*Ntot - 2*newCPoints)) = ...
             (Ntot -newCPoints + 1):(2*Ntot - 2*newCPoints);
 
-        i((2*Ntot-2*newCPoints + 1):(2*Ntot - newCPoints)) = ...
+        rows((2*Ntot-2*newCPoints + 1):(2*Ntot - newCPoints)) = ...
             (Ntot - newCPoints + 1):Ntot;
-        j((2*Ntot-2*newCPoints + 1):(2*Ntot - newCPoints)) = ...
+        cols((2*Ntot-2*newCPoints + 1):(2*Ntot - newCPoints)) = ...
             (2*Ntot - newCPoints + 2) * ones(newCPoints, 1);
 
         myA_3 = A_3(:, 1:newCPoints);
@@ -78,12 +78,13 @@ for newCPoints = empty_indexes:(empty_indexes + 10)
         myA = [myA_1, myA_2, myA_3, myA_4];
         myA = myA((newCPoints+1):end, :);
 
-        i(end - 1) = 2 * Ntot - newCPoints + 1;
-        j(end - 1) = 2 * Ntot - newCPoints + 1;
-        i(end) = 2 * Ntot - newCPoints + 2;
-        j(end) = 2 * Ntot - newCPoints + 2;
+        rows(end - 1) = 2 * Ntot - newCPoints + 1;
+        cols(end - 1) = 2 * Ntot - newCPoints + 1;
+        rows(end) = 2 * Ntot - newCPoints + 2;
+        cols(end) = 2 * Ntot - newCPoints + 2;
+        
         time_dependent = myA; 
-        constant = sparse(i, j, ones(length(j), 1));
+        constant = sparse(rows, cols, ones(length(cols), 1));
         if isfolder(output_path) == false; mkdir(output_path); end
         save(file_name, 'time_dependent', 'constant', 'residual_1');
 

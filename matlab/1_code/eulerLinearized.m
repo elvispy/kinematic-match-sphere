@@ -12,7 +12,7 @@ function [probableNextConditions, errortan] = eulerLinearized(newCPoints, max_nb
         for ii = (Ntot - newCPoints + 1):Ntot
             R(ii) = R(ii) + 2 * dt;
         end
-        f = @(x) sqrt(1-dr^2 * x.^2);
+        f = @(x) sqrt(1-(dr * x).^2);
         residual_1 = jacobian_pieces{newCPoints + 1}.residual_1;
         if newCPoints > 0
             residual_1(Ntot + newCPoints + 1, end) = ...

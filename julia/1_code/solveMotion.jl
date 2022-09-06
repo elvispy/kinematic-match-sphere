@@ -1,6 +1,6 @@
 """
     Author: Elvis Aguero.
-    Date: 13th April, 2022.
+    Date: 24th August, 2022.
     solveMotion
 """
 #Includes
@@ -15,13 +15,19 @@ include("./problemStructsAndFunctions.jl");
 using .problemStructsAndFunctions # Specialized structs and functions to be used in this code
 
 # Main function
+"""
+    SolveMotion.
+    Tires to solve the kinematic match between a rigid spherical object and an
+    axissymmetric membrane in vacuum conditions, Newton's Method or BDF2 finite differences, 
+    taking into account the ellastic modulus of the membrane.
+"""
 function solveMotion(; # <== Keyword arguments!   
      rS::Float64 = 2.38,       Tm::Float64 = 107.0,            R_f::Float64 = NaN,         η_k::Vector{Float64} = Float64[],
      mS::Float64 = NaN,         g::Float64 = 9.80665e-3,       z_k::Float64 = Inf,          u_k::Vector{Float64} = Float64[],    
       μ::Float64 = 0.3,         N::Int64 = 100, save_after_contact::Bool = false,           P_k::Vector{Float64} = Float64[],     
 plotter::Bool = false, recorded_time::Float64 = 0.0,     file_name::String="historial.csv", v_k::Float64 = -0.6312, 
  method::String = "EulerLinearized",                   export_data::Bool = true,            ρ_a::Float64 = 1.225e-3,
- simul_time::Float64 = NaN
+ simul_time::Float64 = NaN,    vu::Float64 = 0.0
  )
 
     if isnan(simul_time) == true
@@ -29,10 +35,11 @@ plotter::Bool = false, recorded_time::Float64 = 0.0,     file_name::String="hist
     end
     if isnan(R_f); R_f = 52.5/rS; end
     if isnan(mS);  mS = 3.25 * 4 * pi * (rS.^3) / 3; end
-    # Constants definitions
+    # Adimensional constants
     Fr = (μ * rS * g)/Tm;
     Mr = μ * (rS^2) / mS;
     D = ρ_a * rS / μ;
+    Vu = vu * sqrt(Tm/μ)/(Tm*rS)
 
     # Units
     length_unit   = rS; # Spatial unit of measurement (in mm)
@@ -105,7 +112,7 @@ plotter::Bool = false, recorded_time::Float64 = 0.0,     file_name::String="hist
 
     returnMatrices = matrixGenerationMethod(method)
     jacobian_pieces = Array{JacobianPiece}(undef, max_nb_contact_points + 1);
-    jacobian_pieces = returnMatrices(jacobian_pieces, Ntot, dr, Mr, maximum_time_step);
+    jacobian_pieces = returnMatrices(jacobian_pieces, Ntot, dr, Mr, maximum_time_step, Vu);
     
     # For preallocation efficiency
     maximum_index = ceil(Int64, (final_time - initial_time)/maximum_time_step) + 4;
@@ -184,7 +191,7 @@ plotter::Bool = false, recorded_time::Float64 = 0.0,     file_name::String="hist
 
         # If empty, allocate more space for matrices
         if isassigned(jacobian_pieces, contact_points + 3) == false
-            jacobian_pieces = returnMatrices(jacobian_pieces, Ntot, dr, Mr, maximum_time_step);
+            jacobian_pieces = returnMatrices(jacobian_pieces, Ntot, dr, Mr, maximum_time_step, Vu);
         end
 
         # First, we try to solve with the same number of contact points
@@ -454,5 +461,11 @@ function get_current_wd()::String
 end
 
 if (abspath(PROGRAM_FILE) == @__FILE__) || occursin(r"debugger"i, PROGRAM_FILE)
-    solveMotion(plotter = true);
+    R_f = 5.0;
+    N = 25;
+    Ntot = ceil(Int64, R_f * N);
+    X = LinRange(0, 2.5, Ntot);
+    η_k = 3*exp.(-(X.^2)) .* cos.(2*pi*X);
+
+    solveMotion(plotter = true, N = N, vu = 0.1, z_k = 20.0, η_k = η_k, R_f = R_f);
 end

@@ -48,22 +48,15 @@ This project follows this [folder structure](https://towardsdatascience.com/how-
 If you find this piece of software useful, you can cite our work as 
 
 
-```
+```bibtex
 @article{https://doi.org/10.48550/arxiv.2208.11089,
   doi = {10.48550/ARXIV.2208.11089},
-  
   url = {https://arxiv.org/abs/2208.11089},
-  
   author = {Agüero, Elvis A. and Alventosa, Luke and Harris, Daniel M. and Galeano-Rios, Carlos A.},
-  
   keywords = {Classical Physics (physics.class-ph), Soft Condensed Matter (cond-mat.soft), FOS: Physical sciences, FOS: Physical sciences},
-  
   title = {Impact of a rigid sphere onto an elastic membrane},
-  
   publisher = {arXiv},
-  
   year = {2022},
-  
   copyright = {Creative Commons Attribution 4.0 International}
 }
 ```

@@ -71,7 +71,7 @@ subset!(exp_data, :Density => d -> d.== 3.25); # Filter densities
 exp_data.labcoefOfRestitution = exp_data.labcoefOfRestitution.^2;
 #predictor = last(exp_data, 1);
 
-exp_data = exp_data[5:5, :];
+#exp_data = exp_data[1:2, :];
 
 #= Trying to debug
 file_path = @__FILE__;

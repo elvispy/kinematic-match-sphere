@@ -11,7 +11,7 @@ function solveMotion_special(v_k::Float64, rho::Float64, vu::Float64, export_pat
     mass(rS, rho) = rho * 4 * pi/3 * rS^3;
     μ = 0.3;
 
-    solveMotion(v_k = v_k, rS = rS, Tm = Tm, R_f = R_f/rS, vu = vu, μ = μ, mS = mass(rS, rho), N = 25, plotter = false, 
+    solveMotion(v_k = v_k, rS = rS, Tm = Tm, R_f = R_f/rS, vu = vu, μ = μ, mS = mass(rS, rho), N = 100, plotter = false, 
                 file_name = export_path, export_data = true, method = "EulerLinearized", save_after_contact = false);
 
 end

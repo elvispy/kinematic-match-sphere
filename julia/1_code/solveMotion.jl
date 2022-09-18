@@ -160,7 +160,8 @@ plotter::Bool = false, recorded_time::Float64 = 0.0,     file_name::String="hist
             coefOfRestitution = [],
             Density = [],
             labcTime = [],
-            labcoefOfRestitution = []
+            labcoefOfRestitution = [],
+            Viscocity = []
         )
         CSV.write(file_name, headers_data_frame)
     end

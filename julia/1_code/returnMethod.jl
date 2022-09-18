@@ -51,7 +51,7 @@ function eulerLinearized(new_nb_cpoints::Int64, max_nb_cpoints::Int64,
         else
             matrix = (dt * jacobian_pieces[new_nb_cpoints + 1].time_dependent + jacobian_pieces[new_nb_cpoints + 1].constant)
         end
-        results =  matrix\(x + gravity_influence + exact_curvature + residual);
+        results = qr(matrix)\(x + gravity_influence + exact_curvature + residual);
 
         z_k_probable = results[end-1];
         v_k_probable = results[end];

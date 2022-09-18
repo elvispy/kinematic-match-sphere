@@ -3,6 +3,10 @@
     Date: 24th August, 2022.
     solveMotion
 """
+
+module kinematic_match
+
+export solveMotion
 #Includes
 using Printf;
 using Plots;
@@ -128,15 +132,24 @@ plotter::Bool = false, recorded_time::Float64 = 0.0,     file_name::String="hist
     resetter = 0; # This variable controls how fast dt can grow
     
     # Check file existence, create .csv
-    A = match(r"[\\\/]([^\\\/]+)\.jl$", PROGRAM_FILE);
+
+    #A = match(r"[\\\/]([^\\\/]+)(?<!debugger)\.jl$", file_name);
+    if ("julia" in readdir())
+        cd("julia\\");
+    end
+    if ("1_code" in readdir())
+        cd("1_code\\");
+    end
+    A = match(r"pipeline", file_name)
     if A !== nothing
-        A = A[1];
-        SAVE_PATH = "./2_pipeline/$A/out";
+        #A = A[1]; 
+        SAVE_PATH = dirname(file_name);
     else
         SAVE_PATH = "../2_pipeline/default/out";
+        file_name = "$SAVE_PATH/$file_name";
     end
     if isdir(SAVE_PATH) == false; mkpath(SAVE_PATH); end
-    if isfile("$SAVE_PATH/$file_name") == false
+    if isfile(file_name) == false
         headers_data_frame = DataFrame(
             ID  = [],
             vi = [],
@@ -149,7 +162,7 @@ plotter::Bool = false, recorded_time::Float64 = 0.0,     file_name::String="hist
             labcTime = [],
             labcoefOfRestitution = []
         )
-        CSV.write("$SAVE_PATH/$file_name", headers_data_frame)
+        CSV.write(file_name, headers_data_frame)
     end
    
     if plotter == true
@@ -437,9 +450,10 @@ plotter::Bool = false, recorded_time::Float64 = 0.0,     file_name::String="hist
             coefOfRestitution    = coef_of_restitution,
             Density              = 3*mS/(4*pi*rS^3),
             labcTime             = lab_contact_time, 
-            labcoefOfRestitution = lab_coef_of_restitution
+            labcoefOfRestitution = lab_coef_of_restitution,
+            Viscocity            = Vu
         );
-        CSV.write("$SAVE_PATH/$file_name", data_to_write, append = true);
+        CSV.write(file_name, data_to_write, append = true);
       
     end
     @printf("Radius: %6.6g (mm)\n", rS);
@@ -455,17 +469,5 @@ plotter::Bool = false, recorded_time::Float64 = 0.0,     file_name::String="hist
     nothing
 end # End main function declaration
 
-function get_current_wd()::String
 
-
-end
-
-if (abspath(PROGRAM_FILE) == @__FILE__) || occursin(r"debugger"i, PROGRAM_FILE)
-    R_f = 5.0;
-    N = 25;
-    Ntot = ceil(Int64, R_f * N);
-    X = LinRange(0, 2.5, Ntot);
-    η_k = 3*exp.(-(X.^2)) .* cos.(2*pi*X);
-
-    solveMotion(plotter = true, N = N, vu = 0.1, z_k = 20.0, η_k = η_k, R_f = R_f);
 end

@@ -24,4 +24,5 @@ include("./matrixGenerationMethod.jl");
 include("./returnMethod.jl")
 include("./retrievePreviousConditions.jl")
 
+
 end

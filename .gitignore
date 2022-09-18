@@ -27,4 +27,4 @@ Manifest.toml
 *.mat
 
 # Julia files
-.jld2
+*.jld2

@@ -195,7 +195,7 @@ function solveMotion2_1(options)
     end
     
     %Now we save the sphere in an array (For plotting)
-    width = Ntot; %min(Ntot, ceil(3 * N));
+    width = min(Ntot, ceil(3 * N));
     xplot = linspace(0, width/N, width);
     EtaX = [-fliplr(xplot(2:end)), xplot] * Lunit;
     %EtaU = zeros(1, 2*width - 1);

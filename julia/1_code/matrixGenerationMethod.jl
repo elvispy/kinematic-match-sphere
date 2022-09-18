@@ -1,3 +1,4 @@
+#include("./problemStructsAndFunctions.jl");
 using .problemStructsAndFunctions: JacobianPiece
 using LinearAlgebra: I
 using SparseArrays;

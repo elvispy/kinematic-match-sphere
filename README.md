@@ -12,11 +12,11 @@ All three languages have a main script, called `solveMotion`, and the initial co
 
 Both the Julia and Matlab versions are decently documented and offer good performance. Although the python version is up and running, it currently does not pre-allocate the matrices needed to solve the linear system, which makes it impractical to use for comparisons with experiments.
 
-Here's a sketch a basic example of some parameters that can be set by `solveMotion`
+Here's a sketch a basic example of some parameters that can be set by `solveMotion` (On Julia's REPL)
 
 ```julia
-julia> include("solveMotion.jl") # This is not necessary in matlab and python
-julia> solve_motion(
+julia> include("solveMotion.jl"); using .kinematic_match: solveMotion # This import statement is not necessary in matlab and python
+julia> solveMotion(
        rS =  2.38, # Sphere radius in (mm)
        Tm =   107, # Membrane linear tension in (Pa * m)
        z_k =  3.0, # Initial position of the center of the sphere, in (mm)

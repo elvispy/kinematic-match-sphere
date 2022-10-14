@@ -1,7 +1,21 @@
 include("solveMotion.jl");
 using .kinematic_match
 using CSV, DataFrames, Printf;
+using Logging, Dates;
+if ("julia" in readdir())
+    cd("julia\\");
+end
+if ("1_code" in readdir())
+    cd("1_code\\");
+end
+f = open("../2_pipeline/sweep_viscocity/out/debug$(Dates.today()).txt", "a");
+global_logger(SimpleLogger(f));
 
+
+function log_and_debug(str::String)
+    println(str); 
+    @info(str);
+end
 # Defining functions
 function solveMotion_special(v_k::Float64, rho::Float64, vu::Float64, export_path::String)
 
@@ -73,10 +87,7 @@ exp_data.labcoefOfRestitution = exp_data.labcoefOfRestitution.^2;
 
 #exp_data = exp_data[1:2, :];
 
-#= Trying to debug
-file_path = @__FILE__;
-cd("../2_pipeline/$");
-=#
+
 
 baixa_viscocidade =  0.0;
 alta_viscocidade  = 10.0;
@@ -86,11 +97,11 @@ for ii = 1:size(exp_data, 1)
 end
 erro_abaixo, _ = get_simulation_error(size(exp_data, 1), export_file_path, exp_data);
 
-@printf("------------\n");
-@printf("Resumo\n");
-@printf("Viscocidade \n")
-@printf("Viscocidade: %.5g\n", baixa_viscocidade);
-@printf("Erro Total: %.5f\n", erro_abaixo);
+log_and_debug("------------\n");
+log_and_debug("Resumo\n");
+log_and_debug("Viscocidade \n")
+log_and_debug(@sprintf("Viscocidade: %.5g\n", baixa_viscocidade));
+log_and_debug(@sprintf("Erro Total: %.5f\n", erro_abaixo));
 
 
 for ii = 1:size(exp_data, 1)
@@ -98,11 +109,11 @@ for ii = 1:size(exp_data, 1)
 end
 erro_acima, _ = get_simulation_error(size(exp_data, 1), export_file_path, exp_data);
 
-@printf("------------\n");
-@printf("Resumo\n");
-@printf("Viscocidade \n")
-@printf("Viscocidade: %.5g\n", alta_viscocidade);
-@printf("Erro Total: %.5f\n", erro_acima);
+log_and_debug("------------\n");
+log_and_debug("Resumo\n");
+log_and_debug("Viscocidade \n")
+log_and_debug(@sprintf("Viscocidade: %.5g\n", alta_viscocidade));
+log_and_debug(@sprintf("Erro Total: %.5f\n", erro_acima));
 
 errmin = Inf;
 viscmin = NaN;
@@ -125,20 +136,20 @@ while alta_viscocidade - baixa_viscocidade > 0.05
         global baixa_viscocidade = viscocidade_media;
     end
 
-    @printf("---------------\n");
-    @printf("Resumo\n");
-    @printf("Viscocidade: %.5g\n", viscocidade_media);
-    @printf("Erro Total: %.5f\n", erro_medio);
-    @printf("Alpha: %.5f, TC: %.5f, Delta: %.5f\n", t[1], t[2], t[3]);
+    log_and_debug("---------------\n");
+    log_and_debug("Resumo\n");
+    log_and_debug(@sprintf("Viscocidade: %.5g\n", viscocidade_media));
+    log_and_debug(@sprintf("Erro Total: %.5f\n", erro_medio));
+    log_and_debug(@sprintf("Alpha: %.5f, TC: %.5f, Delta: %.5f\n", t[1], t[2], t[3]));
 end
 
-println("RESULTADO FINAL");
-@printf("Menor erro: %.5f\n", errmin);
-@printf("Atingido com vu=%.5f\n", viscmin);
+log_and_debug("RESULTADO FINAL");
+log_and_debug(@sprintf("Menor erro: %.5f\n", errmin));
+log_and_debug(@sprintf("Atingido com vu=%.5f\n", viscmin));
 
-@printf("Resultado final para rho = %.5g\n", 3.25);
-@printf("Menor erro: %.5f\n", errmin);
-@printf("Atingido com vu=%.5f\n", viscmin);
-@printf("-------------------------\n-------------------------\n-------------------------\n-------------------------\n");
+log_and_debug(@sprintf("Resultado final para rho = %.5g\n", 3.25));
+log_and_debug(@sprintf("Menor erro: %.5f\n", errmin));
+log_and_debug(@sprintf("Atingido com vu=%.5f\n", viscmin));
+log_and_debug("-------------------------\n-------------------------\n-------------------------\n-------------------------\n");
 
-
+close(f);
